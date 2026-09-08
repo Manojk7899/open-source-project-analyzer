@@ -1,217 +1,168 @@
 # Open Source Project Analyzer
 
-A powerful full-stack application for analyzing and understanding open-source projects. Built with **Rust** backend and **Next.js** frontend, this tool provides insights into project structure, dependencies, language composition, and other metrics.
+A Rust backend and Next.js frontend that analyze GitHub repositories using repository metrics, deterministic scoring, PostgreSQL, and Gemini AI analysis.
 
 ## Features
 
-- 📊 **Project Analysis** - Analyze repository structure and composition
-- 🔍 **Language Detection** - Identify programming languages used in projects
-- 📈 **Metrics & Insights** - Generate comprehensive project statistics
-- 🎨 **Modern UI** - Interactive Next.js-based frontend
-- ⚡ **High Performance** - Rust-based backend for fast processing
-- 🐳 **Docker Support** - Easy deployment with Docker Compose
+- Fetch GitHub repository metadata and README content
+- Store repositories in PostgreSQL
+- Calculate deterministic repository scores
+- Generate and store Gemini AI analysis
+- Combine repository data, scores, and AI analysis into a report
+- Use the web frontend or `requests.http` to test the API
 
-## Tech Stack
+## Requirements
 
-- **Backend**: Rust with Actix-web/Rocket framework
-- **Frontend**: Next.js with TypeScript
-- **Database**: PostgreSQL (migrations included)
-- **DevOps**: Docker & Docker Compose
-- **API**: RESTful HTTP endpoints
-
-## Project Structure
-
-```
-.
-├── src/                    # Rust backend source code
-├── frontend/               # Next.js frontend application
-├── migrations/             # Database migrations
-├── Cargo.toml             # Rust dependencies
-├── Cargo.lock             # Rust dependency lock file
-├── compose.yml            # Docker Compose configuration
-├── requests.http          # HTTP request examples
-└── .gitignore             # Git ignore rules
-```
-
-## Quick Start
-
-### Prerequisites
-
-- [Rust](https://www.rust-lang.org/tools/install) (1.70+)
-- [Node.js](https://nodejs.org/) (18+)
-- [Docker](https://www.docker.com/products/docker-desktop) & Docker Compose
-- [PostgreSQL](https://www.postgresql.org/) (or use Docker)
-
-### Using Docker Compose (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/Manojk7899/open-source-project-analyzer.git
-cd open-source-project-analyzer
-
-# Start all services
-docker-compose up -d
-
-# Access the application
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8080
-```
-
-### Manual Setup
-
-#### Backend (Rust)
-
-```bash
-# Install dependencies and build
-cargo build --release
-
-# Run the server
-cargo run --release
-
-# Run tests
-cargo test
-```
-
-The backend server will start on `http://localhost:8080` by default.
-
-#### Frontend (Next.js)
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Build for production
-npm run build
-npm start
-```
-
-The frontend will be available at `http://localhost:3000`.
-
-#### Database Setup
-
-```bash
-# Run migrations
-sqlx migrate run
-
-# Or using Cargo
-cargo sqlx migrate run
-```
-
-## API Endpoints
-
-Refer to `requests.http` for example API calls. Key endpoints include:
-
-- `GET /api/projects` - List all analyzed projects
-- `POST /api/projects/analyze` - Analyze a new project
-- `GET /api/projects/{id}` - Get project details
-- `GET /api/projects/{id}/metrics` - Get project metrics
-
-For detailed endpoint documentation, see the backend source code in `src/`.
+- Rust and Cargo
+- Docker and Docker Compose
+- Node.js and npm
+- A Gemini API key
 
 ## Configuration
 
-### Environment Variables
-
-Create a `.env` file in the root directory:
+Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost/open_source_analyzer
-RUST_LOG=info
-API_HOST=0.0.0.0
-API_PORT=8080
+DATABASE_URL=postgres://analyzer:analyzer@localhost:5432/open_source_analyzer
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-3.6-flash
 ```
 
-### Database
+Do not commit `.env` or API keys to GitHub.
 
-Update the connection string in `Cargo.toml` or environment variables to match your PostgreSQL setup.
+## Start PostgreSQL
 
-## Development
-
-### Backend Development
+From the project root:
 
 ```bash
-# Watch mode
-cargo watch -x run
-
-# Format code
-cargo fmt
-
-# Lint with Clippy
-cargo clippy
+docker compose up -d
+docker compose ps
 ```
 
-### Frontend Development
+The database runs on `localhost:5432` with these default values:
+
+- User: `analyzer`
+- Password: `analyzer`
+- Database: `open_source_analyzer`
+
+## Run Database Migrations
+
+```bash
+cargo run --bin migrate
+```
+
+## Run the Rust API
+
+```bash
+cargo run
+```
+
+The API runs at:
+
+```text
+http://127.0.0.1:8081
+```
+
+Health check:
+
+```text
+GET http://127.0.0.1:8081/health
+```
+
+## API Workflow
+
+A repository must be fetched before scores and reports can be generated.
+
+### 1. Fetch and store a repository
+
+```http
+POST http://127.0.0.1:8081/api/repository/fetch
+Content-Type: application/json
+
+{
+  "url": "https://github.com/tokio-rs/axum"
+}
+```
+
+### 2. Calculate and store the score
+
+Replace `1` with the returned database ID:
+
+```http
+POST http://127.0.0.1:8081/api/repository/1/score
+```
+
+### 3. Generate and store Gemini analysis
+
+```http
+POST http://127.0.0.1:8081/api/repository/1/ai-analysis
+```
+
+### 4. Get the complete report
+
+```http
+GET http://127.0.0.1:8081/api/repository/1/report
+```
+
+### Other endpoints
+
+```http
+POST http://127.0.0.1:8081/api/repository/preview
+GET http://127.0.0.1:8081/api/repository/
+GET http://127.0.0.1:8081/api/repository/1
+GET http://127.0.0.1:8081/api/repository/1/score
+GET http://127.0.0.1:8081/api/repository/1/ai-analysis
+```
+
+The same requests are available in [requests.http](requests.http).
+
+## Run the Frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
-
-# Development with hot reload
+npm install
 npm run dev
-
-# Linting
-npm run lint
 ```
 
-## Deployment
+The frontend runs at the URL printed by Next.js, usually:
 
-### Deploy with Docker
+```text
+http://localhost:3000
+```
+
+The frontend expects the Rust API at `http://127.0.0.1:8081`.
+
+## Verify Stored Data
 
 ```bash
-# Build images
-docker-compose build
-
-# Start services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
+PGPASSWORD=analyzer psql \
+  -h localhost \
+  -p 5432 \
+  -U analyzer \
+  -d open_source_analyzer
 ```
 
-### Deploy to Production
+Then run:
 
-1. Update environment variables in `.env.production`
-2. Use your preferred hosting platform (Vercel for frontend, AWS/DigitalOcean for backend)
-3. Configure database backups and monitoring
+```sql
+SELECT * FROM repositories;
+SELECT * FROM repository_scores;
+SELECT * FROM repository_ai_analyses;
+```
 
-## Contributing
+## Checks
 
-Contributions are welcome! Please follow these steps:
+Backend:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```bash
+cargo check
+```
 
-## License
+Frontend:
 
-This project is open source and available under the [MIT License](LICENSE).
-
-## Support
-
-For issues, questions, or suggestions:
-- Open an [Issue](https://github.com/Manojk7899/open-source-project-analyzer/issues)
-- Check existing [Discussions](https://github.com/Manojk7899/open-source-project-analyzer/discussions)
-- Read the [Wiki](https://github.com/Manojk7899/open-source-project-analyzer/wiki)
-
-## Roadmap
-
-- [ ] Advanced filtering and search capabilities
-- [ ] Real-time project monitoring
-- [ ] Export reports (PDF, CSV)
-- [ ] GitHub integration
-- [ ] Performance benchmarking
-- [ ] Machine learning-based insights
-
-## Author
-
-**Manojk7899** - [GitHub Profile](https://github.com/Manojk7899)
-
----
-
-**Happy Analyzing! 🚀**
+```bash
+cd frontend
+npm run lint
+```
