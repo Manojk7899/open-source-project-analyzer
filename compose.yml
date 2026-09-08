@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: analyzer
+      POSTGRES_PASSWORD: analyzer
+      POSTGRES_DB: open_source_analyzer
+    ports:
+      - "5432:5432"
+    volumes:
+      - analyzer_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U analyzer -d open_source_analyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  analyzer_data:

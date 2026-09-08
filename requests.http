@@ -1,0 +1,39 @@
+### Health check
+GET http://127.0.0.1:8081/health
+
+### Preview a GitHub repository
+POST http://127.0.0.1:8081/api/repository/preview
+Content-Type: application/json
+
+{
+  "url": "https://github.com/tokio-rs/axum"
+}
+
+### Fetch and store a GitHub repository
+POST http://127.0.0.1:8081/api/repository/fetch
+Content-Type: application/json
+
+{
+  "url": "https://github.com/tokio-rs/axum"
+}
+
+### List stored repositories
+GET http://127.0.0.1:8081/api/repository/
+
+### Get one stored repository by id
+GET http://127.0.0.1:8081/api/repository/1
+
+### Calculate and store repository score
+POST http://127.0.0.1:8081/api/repository/1/score
+
+### Get stored repository score
+GET http://127.0.0.1:8081/api/repository/1/score
+
+### Analyze repository with Gemini and store the result
+POST http://127.0.0.1:8081/api/repository/1/ai-analysis
+
+### Get stored Gemini analysis
+GET http://127.0.0.1:8081/api/repository/1/ai-analysis
+
+###get full repository report
+GET http://127.0.0.1:8081/api/repository/1/report
